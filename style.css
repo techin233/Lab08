@@ -1,0 +1,10 @@
+div {
+    font-family: Arial, sans-serif;
+    /* You can change 'Arial' to any other font you prefer */
+}
+
+/* Change font for the labels inside the 'labelContainer' div */
+#label-container div {
+    font-family: 'Times New Roman', serif;
+    /* You can change 'Times New Roman' to any other font you prefer */
+}

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <title>Lab08</title>
+</head>
+<style>
+    body {
+        background-image: url("https://cdn.dribbble.com/users/2156796/screenshots/19992280/media/7d2ee3a4d15d1f335419059066067694.gif");
+        background-size: cover;
+    }
+</style>
+
+<body class="w3-center w3-panel w3-padding-large">
+    <div class="w3-container w3-center w3-text-black"
+        style="font-family: Verdana, Geneva, Tahoma, serif; text-shadow: 1px 1px 0 rgb(92, 92, 92); font-size: 40px; ">
+        Teachable Machine
+        Image Model</div>
+    <button type="button" class="w3-btn w3-block w3-black" onclick="toggleWebcam()">Start</button>
+    <div id="webcam-container" class="w3-container w3-panel w3-padding-large"></div>
+    <div id="label-container"></div>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script
+        src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+    <script type="text/javascript">
+        const URL = "https://teachablemachine.withgoogle.com/models/_czlw0J_N/";
+        let model, webcam, labelContainer, maxPredictions;
+        let maskDetected = false;
+
+        async function init() {
+            const modelURL = URL + "model.json";
+            const metadataURL = URL + "metadata.json";
+
+            model = await tmImage.load(modelURL, metadataURL);
+            maxPredictions = model.getTotalClasses();
+
+            const flip = true;
+            webcam = new tmImage.Webcam(360, 360, flip);
+            await webcam.setup();
+            await webcam.play();
+            window.requestAnimationFrame(loop);
+
+            document.getElementById("webcam-container").appendChild(webcam.canvas);
+            labelContainer = document.getElementById("label-container");
+            for (let i = 0; i < maxPredictions; i++) {
+                labelContainer.appendChild(document.createElement("div"));
+            }
+        }
+
+        async function loop() {
+            if (!maskDetected && webcam) {
+                webcam.update();
+                await predict();
+                window.requestAnimationFrame(loop);
+            } else {
+                closeWebcam();
+            }
+        }
+
+        async function predict() {
+            if (webcam) {
+                const prediction = await model.predict(webcam.canvas);
+                const threshold = 0.99;
+
+                for (let i = 0; i < maxPredictions; i++) {
+                    const classPrediction =
+                        prediction[i].className + ": " + prediction[i].probability.toFixed(2);
+                    labelContainer.childNodes[i].innerHTML = classPrediction;
+
+                    if (prediction[i].className === "Mask" && prediction[i].probability > threshold) {
+                        if (!maskDetected) {
+                            setTimeout(() => {
+                                const confirmMask = confirm("You are wearing a mask. Do you want to proceed to the new window?");
+                                if (confirmMask) {
+                                    window.open("https://www.rmutp.ac.th", "_blank");
+                                    maskDetected = true;
+                                }
+                            }, 1000);
+                        }
+                    }
+                }
+            }
+        }
+
+
+        function closeWebcam() {
+            if (webcam) {
+                webcam.pause();
+                webcam = null;
+                const webcamContainer = document.getElementById("webcam-container");
+                while (webcamContainer.firstChild) {
+                    webcamContainer.removeChild(webcamContainer.firstChild);
+                }
+            }
+        }
+
+        function toggleWebcam() {
+            if (webcam) {
+                closeWebcam();
+            } else {
+                maskDetected = false;
+                init();
+            }
+        }
+    </script>
+</body>
+
+</html>
